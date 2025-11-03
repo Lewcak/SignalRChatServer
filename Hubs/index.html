@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SignalR Chat</title>
+ 
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /*  styles for the chat bubbles */
+        .chat-bubble {
+            max-width: 75%;
+        }
+        .chat-bubble.self {
+            background-color: #dcf8c6; 
+            align-self: flex-end;
+        }
+        .chat-bubble.other {
+            background-color: #f1f0f0; 
+            align-self: flex-start;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased bg-gray-100">
+
+    <div class="container mx-auto p-4" style="max-width: 600px;">
+        <div class="bg-white rounded-lg shadow-lg">
+
+            <!-- Header -->
+            <div class="bg-gray-800 text-white p-4 rounded-t-lg">
+                <h1 class="text-2xl font-semibold">C# & SignalR Chat</h1>
+            </div>
+
+            <!-- Message List -->
+            <div id="messagesList" class="p-4 h-96 overflow-y-auto flex flex-col space-y-2">
+                <div class="chat-bubble other p-3 rounded-lg">
+                    <div class="font-bold text-sm">Server</div>
+                    <div>Welcome! Connect to chat.</div>
+                </div>
+            </div>
+
+            <!-- Connection / User Name -->
+            <div id="connectionArea" class="p-4 border-t border-gray-200 flex space-x-2">
+                <input type="text" id="userInput" placeholder="Enter your name" class="flex-grow border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                <button id="connectButton" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">
+                    Join Chat
+                </button>
+            </div>
+
+            <!-- Message Input -->
+            <div id="messageArea" class="p-4 border-t border-gray-200 flex space-x-2" style="display: none;">
+                <input type="text" id="messageInput" placeholder="Type a message..." class="flex-grow border border-gray-300 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-green-500" />
+                <button id="sendButton" class="bg-green-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-green-700 transition">
+                    Send
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', (event) => {
+            const connectButton = document.getElementById('connectButton');
+            const sendButton = document.getElementById('sendButton');
+            const userInput = document.getElementById('userInput');
+            const messageInput = document.getElementById('messageInput');
+            const messagesList = document.getElementById('messagesList');
+            const connectionArea = document.getElementById('connectionArea');
+            const messageArea = document.getElementById('messageArea');
+
+            let hubConnection;
+
+            connectButton.addEventListener('click', function () {
+                const userName = userInput.value;
+                if (!userName) {
+                    alert('Please enter your name.');
+                    return;
+                }
+
+                // Create the connection
+
+                const hubUrl = 'http://localhost:5021/chat'; 
+                
+                hubConnection = new signalR.HubConnectionBuilder()
+                    .withUrl(hubUrl)
+                    .withAutomaticReconnect() 
+                    .build();
+
+
+
+
+                hubConnection.on("ReceiveMessage", function (user, message) {
+                    addMessageToChat(user, message);
+                });
+
+                // Start the connection
+                console.log("Connecting to hub...");
+                hubConnection.start()
+                    .then(() => {
+                        console.log("Connection started!");
+                        connectionArea.style.display = 'none';
+                        messageArea.style.display = 'flex';
+                    })
+                    .catch(err => {
+                        console.error("Connection error: " + err.toString());
+                        alert("Could not connect to server. Check console.");
+                    });
+            });
+
+            // Handler for the Send button 
+            sendButton.addEventListener('click', function () {
+                sendMessage();
+            });
+
+            // Also send when pressing Enter 
+            messageInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            // Function to send a message to the hub 
+            function sendMessage() {
+                const user = userInput.value; // Get the users name
+                const message = messageInput.value; // Get the message text
+
+                if (hubConnection && message) {
+
+                    hubConnection.invoke("SendMessage", user, message)
+                        .catch(err => console.error("Send message error: " + err.toString()));
+                    
+                    // Clear the input box
+                    messageInput.value = "";
+                    messageInput.focus();
+                }
+            }
+
+            //  Function to add a message to the UI 
+            function addMessageToChat(user, message) {
+                const currentUserName = userInput.value;
+
+                // Create the new message bubble element
+                const bubble = document.createElement('div');
+                bubble.className = 'chat-bubble p-3 rounded-lg';
+                
+                // Add the users name
+                const userDiv = document.createElement('div');
+                userDiv.className = 'font-bold text-sm';
+                userDiv.textContent = user;
+
+                // Add the message text
+                const messageDiv = document.createElement('div');
+                messageDiv.textContent = message;
+                
+                // Style differently for self or other
+                if (user === currentUserName) {
+                    bubble.classList.add('self');
+                    userDiv.textContent = 'You'; 
+                } else {
+                    bubble.classList.add('other');
+                }
+
+                // Add the name and message to the bubble
+                bubble.appendChild(userDiv);
+                bubble.appendChild(messageDiv);
+
+                // Add the bubble to the list
+                messagesList.appendChild(bubble);
+
+                // Auto scroll to the bottom
+                messagesList.scrollTop = messagesList.scrollHeight;
+            }
+        });
+    </script>
+</body>
+</html>

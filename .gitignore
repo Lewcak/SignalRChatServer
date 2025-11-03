@@ -1,0 +1,10 @@
+.NET Core build output
+
+[Bb]in/
+[Oo]bj/
+
+User-specific files
+
+.vscode/
+*.user
+*.suo
