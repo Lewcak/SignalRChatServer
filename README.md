@@ -20,19 +20,19 @@ This is a real-time chat application built using the core concepts of C# ASP.NET
 
 1) ### Run the Server
 
-You must have atleast .NET 8 SDK installed.
+* You must have atleast .NET 8 SDK installed.
 
 * Navigate to the server project directory
 ```bash
 cd SignalRChatServer
 ```
-**Run the server**
+* Run the server 
 ```bash
 dotnet run
 ```
 * The server will start, check the the localhost URL
 
-2) **Run the Client**
+2) ### Run the Client
 
 * Make sure the server is running.
 
